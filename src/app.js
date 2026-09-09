@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
 
+const analyticsRoutes = require('./routes/analyticsRoutes');
+
 const app = express();
 
 // Middleware  
@@ -14,9 +16,13 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
+// Health check
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Server is running' });
 });
+
+// Routes
+app.use('/api/analytics', analyticsRoutes);
 
 
 app.use((req, res) => {
