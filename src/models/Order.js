@@ -1,0 +1,1 @@
+// Schema fields: customerId, items, totalAmount, status, createdAt
