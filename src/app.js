@@ -1,8 +1,11 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const path = require('path');
 
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const orderRoutes = require('./routes/orderRoutes');
+const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 
@@ -10,6 +13,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // HTTP request logger (only in development)
 if (process.env.NODE_ENV === 'development') {
@@ -23,19 +27,14 @@ app.get('/api/health', (req, res) => {
 
 // Routes
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/orders', orderRoutes);
 
-
+// 404 Route Handler
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Route not found' });
 });
 
-//Global error handler 
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-  });
-});
+// Centralized Error Handler (must be the last middleware registered)
+app.use(errorHandler);
 
 module.exports = app;

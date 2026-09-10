@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Real-Time Admin Dashboard - Test Client</title>
+  <script src="/socket.io/socket.io.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0f172a;
+      color: #f8fafc;
+      margin: 0;
+      padding: 24px;
+    }
+    h1 {
+      margin-top: 0;
+      color: #38bdf8;
+    }
+    .status-bar {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 20px;
+      padding: 12px 16px;
+      background: #1e293b;
+      border-radius: 8px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    .badge-connected { background: #166534; color: #86efac; }
+    .badge-disconnected { background: #991b1b; color: #fca5a5; }
+    .badge-room { background: #075985; color: #7dd3fc; }
+    button {
+      background: #0284c7;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #0369a1; }
+    button:disabled { background: #475569; cursor: not-allowed; }
+    .recent-count-card {
+      background: #1e293b;
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 4px solid #f59e0b;
+    }
+    .log-container {
+      background: #111827;
+      border: 1px solid #334155;
+      border-radius: 8px;
+      padding: 16px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .log-item {
+      padding: 10px 14px;
+      margin-bottom: 8px;
+      border-radius: 6px;
+      background: #1f2937;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    .log-item.created { border-left: 4px solid #10b981; }
+    .log-item.status-updated { border-left: 4px solid #6366f1; }
+    .log-item.periodic { border-left: 4px solid #f59e0b; }
+    .log-time { color: #94a3b8; font-size: 11px; margin-bottom: 4px; }
+    pre { margin: 0; white-space: pre-wrap; word-break: break-all; }
+  </style>
+</head>
+<body>
+  <h1>Real-Time Order & Analytics Admin Client</h1>
+  
+  <div class="status-bar">
+    <div>Status: <span id="conn-status" class="badge badge-disconnected">Disconnected</span></div>
+    <div>Room: <span id="room-status" class="badge">Not in room</span></div>
+    <button id="join-btn" onclick="joinAdminRoom()">Join Admins Room</button>
+  </div>
+
+  <div class="recent-count-card">
+    <strong>Bonus Metric (Orders in last 5 min): </strong>
+    <span id="recent-count" style="font-size: 18px; color: #f59e0b; font-weight: bold;">--</span>
+    <span id="recent-time" style="color: #94a3b8; font-size: 12px; margin-left: 8px;"></span>
+  </div>
+
+  <h3>Real-Time Event Logs</h3>
+  <div id="logs" class="log-container">
+    <div style="color: #64748b;">Awaiting Socket.io events...</div>
+  </div>
+
+  <script>
+    const socket = io();
+
+    const connStatus = document.getElementById('conn-status');
+    const roomStatus = document.getElementById('room-status');
+    const joinBtn = document.getElementById('join-btn');
+    const logsContainer = document.getElementById('logs');
+    const recentCount = document.getElementById('recent-count');
+    const recentTime = document.getElementById('recent-time');
+
+    socket.on('connect', () => {
+      connStatus.textContent = `Connected (${socket.id})`;
+      connStatus.className = 'badge badge-connected';
+      addLog('Socket Connected', { socketId: socket.id }, 'connected');
+    });
+
+    socket.on('disconnect', () => {
+      connStatus.textContent = 'Disconnected';
+      connStatus.className = 'badge badge-disconnected';
+      roomStatus.textContent = 'Not in room';
+      roomStatus.className = 'badge';
+      joinBtn.disabled = false;
+      addLog('Socket Disconnected', {}, 'disconnected');
+    });
+
+    function joinAdminRoom() {
+      socket.emit('join_admins');
+      joinBtn.disabled = true;
+    }
+
+    socket.on('joined_admins', (data) => {
+      roomStatus.textContent = 'admins';
+      roomStatus.className = 'badge badge-room';
+      addLog('Room Joined', data, 'room');
+    });
+
+    socket.on('order_created', (order) => {
+      addLog('⚡ order_created', order, 'created');
+    });
+
+    socket.on('order_status_updated', (order) => {
+      addLog('🔄 order_status_updated', order, 'status-updated');
+    });
+
+    socket.on('recent_orders_count', (data) => {
+      recentCount.textContent = data.count;
+      recentTime.textContent = `(last updated: ${new Date(data.timestamp).toLocaleTimeString()})`;
+      addLog('⏱️ recent_orders_count', data, 'periodic');
+    });
+
+    function addLog(event, data, type) {
+      if (logsContainer.children.length === 1 && logsContainer.children[0].style.color) {
+        logsContainer.innerHTML = '';
+      }
+      const item = document.createElement('div');
+      item.className = `log-item ${type}`;
+      const time = new Date().toLocaleTimeString();
+      item.innerHTML = `
+        <div class="log-time">[${time}] Event: <strong>${event}</strong></div>
+        <pre>${JSON.stringify(data, null, 2)}</pre>
+      `;
+      logsContainer.insertBefore(item, logsContainer.firstChild);
+    }
+  </script>
+</body>
+</html>
