@@ -344,26 +344,3 @@ JWT_SECRET=your_secret_here
 
 Do not commit the `.env` file to GitHub.
 
-## Git Commits
-
-The main development stages were committed separately:
-
-```text
-chore: initialize project structure
-feat: add MongoDB connection and order model
-feat: implement order REST APIs
-feat: add sales analytics aggregation
-feat: add real-time order updates with Socket.io
-docs: complete project documentation
-```
-
-## Notes
-
-This project was developed as an interview assignment to demonstrate:
-
-- REST API development
-- MongoDB data modeling
-- MongoDB aggregation
-- API validation and error handling
-- Socket.io real-time communication
-- Basic backend project structure
